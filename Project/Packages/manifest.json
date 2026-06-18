@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "ai.undream.llm": "https://github.com/undreamai/LLMUnity.git",
     "com.unity.ai.navigation": "2.0.6",
     "com.unity.formats.fbx": "5.1.1",
     "com.unity.ide.rider": "3.0.31",
@@ -12,6 +13,7 @@
     "com.unity.test-framework": "1.4.6",
     "com.unity.toolchain.macos-x86_64-linux-x86_64": "2.0.10",
     "com.unity.ugui": "2.0.0",
+    "dev.yarnspinner.unity": "https://github.com/YarnSpinnerTool/YarnSpinner-Unity.git#current",
     "com.unity.modules.imageconversion": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics": "1.0.0",

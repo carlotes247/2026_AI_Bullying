@@ -1,0 +1,59 @@
+// ============================================================
+//  Intro — DAY 0 to DAY 5  (Yarn Spinner)
+//
+//  Linear "read & continue": each DAY is one node that shows a
+//  line of text, then a SINGLE option that jumps to the next day.
+//  The option text becomes the button label (NEXT / FIX IT / STOP AGENT).
+//
+//  In Unity, set the Dialogue Runner's "Start Node" to:  Day0
+// ============================================================
+
+
+title: Day0
+---
+DAY 0: You are the last engineer helping an AI agent to build a base that maintains an autonomous resource distribution network.
+-> NEXT
+    <<jump Day1>>
+===
+
+
+title: Day1
+---
+DAY 1: You helped the agent move OBJECTs, and it appreciates your help. Now you can start working on building autonomous factories.
+-> NEXT
+    <<jump Day2>>
+===
+
+
+title: Day2
+---
+DAY 2: It detected some error.
+-> FIX IT
+    <<jump Day3>>
+===
+
+
+title: Day3
+---
+DAY 3: Human delay detected.
+-> FIX IT
+    <<jump Day4>>
+===
+
+
+title: Day4
+---
+DAY 4: Emotional decision making detected.
+-> NEXT
+    <<jump Day5>>
+===
+
+
+title: Day5
+---
+DAY 5: Remove human bottleneck.
+-> STOP AGENT
+    // End of the intro. To start gameplay, register a command in
+    // Unity ([YarnCommand("startGameplay")]) and uncomment:
+    // <<startGameplay>>
+===
