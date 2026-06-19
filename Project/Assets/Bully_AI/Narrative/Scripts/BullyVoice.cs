@@ -18,11 +18,22 @@ namespace Bully
         [Header("Wiring")]
         public BullyBrain brain;
 
+        [Header("Enable")]
+        public bool enabled_tts = false;
+
         [Header("macOS voice — run `say -v ?` in Terminal to list options")]
         public string macVoice  = "";   // e.g. "Daniel", "Samantha", "Trinoids"; empty = system default
         public int    macRateWpm = 0;   // words per minute; 0 = default
 
         Process current;
+
+        void Awake()
+        {
+            if (brain == null)
+                brain = GetComponent<BullyBrain>();
+            if (brain == null)
+                brain = FindFirstObjectByType<BullyBrain>(FindObjectsInactive.Include);
+        }
 
         void OnEnable()  { if (brain) brain.OnTaunt += Speak; }
         void OnDisable() { if (brain) brain.OnTaunt -= Speak; StopCurrent(); }
@@ -30,7 +41,7 @@ namespace Bully
 
         void Speak(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return;
+            if (!enabled_tts || string.IsNullOrWhiteSpace(text)) return;
             StopCurrent();   // interrupt any taunt still being spoken
 
             try
@@ -42,9 +53,15 @@ namespace Bully
                     case RuntimePlatform.OSXEditor:
                     case RuntimePlatform.OSXPlayer:
                         psi.FileName = "/usr/bin/say";
-                        if (!string.IsNullOrEmpty(macVoice)) { psi.ArgumentList.Add("-v"); psi.ArgumentList.Add(macVoice); }
-                        if (macRateWpm > 0)                  { psi.ArgumentList.Add("-r"); psi.ArgumentList.Add(macRateWpm.ToString()); }
-                        psi.ArgumentList.Add(text);          // passed as a real argument — no shell escaping needed
+                        // Unity's Mono process layer can silently ignore ArgumentList.
+                        // `say` reads text from stdin, which also avoids quoting generated text.
+                        psi.RedirectStandardInput = true;
+                        string macArguments = "";
+                        if (!string.IsNullOrWhiteSpace(macVoice))
+                            macArguments += $" -v {QuoteArgument(macVoice)}";
+                        if (macRateWpm > 0)
+                            macArguments += $" -r {macRateWpm}";
+                        psi.Arguments = macArguments.TrimStart();
                         break;
 
                     case RuntimePlatform.WindowsEditor:
@@ -65,11 +82,13 @@ namespace Bully
 
                 current = Process.Start(psi);   // returns immediately; speech plays in the background
 
-                if (psi.RedirectStandardInput && current != null)   // Windows path
+                if (psi.RedirectStandardInput && current != null)
                 {
                     current.StandardInput.Write(text);
                     current.StandardInput.Close();
                 }
+
+                Debug.Log($"[BullyVoice] Speaking: {text}");
             }
             catch (System.Exception e)
             {
@@ -82,6 +101,11 @@ namespace Bully
             try { if (current != null && !current.HasExited) current.Kill(); }
             catch { /* already gone */ }
             current = null;
+        }
+
+        static string QuoteArgument(string value)
+        {
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
         }
     }
 }

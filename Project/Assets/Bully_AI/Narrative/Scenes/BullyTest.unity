@@ -348,6 +348,7 @@ GameObject:
   - component: {fileID: 734801224}
   - component: {fileID: 734801223}
   - component: {fileID: 734801226}
+  - component: {fileID: 734801227}
   m_Layer: 0
   m_Name: Bully
   m_TagString: Untagged
@@ -393,7 +394,7 @@ MonoBehaviour:
   _port: 13333
   numRetries: 5
   _grammar: 
-  numPredict: -1
+  numPredict: 50
   cachePrompt: 1
   seed: -1
   temperature: 0.8
@@ -450,7 +451,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   agent: {fileID: 734801224}
   threatLevel: 30
-  threatPerSuccess: 10
+  threatPerSuccess: 1
   threatPerDisrupt: 5
   pleaAfterDisrupts: 3
   dominantThreshold: 70
@@ -460,6 +461,21 @@ MonoBehaviour:
   - Pathetic.
   - Was that supposed to matter?
   - You'll learn.
+--- !u!114 &734801227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734801222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 007aff523b55e2f40a8a7bd69a700719, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brain: {fileID: 734801226}
+  macVoice: 
+  macRateWpm: 0
 --- !u!1001 &1105277524
 PrefabInstance:
   m_ObjectHideFlags: 0

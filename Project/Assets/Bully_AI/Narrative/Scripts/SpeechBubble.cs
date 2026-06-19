@@ -22,6 +22,7 @@ namespace Bully
         public RectTransform bubble;
         public TMP_Text label;
         public Camera cam;
+        public GameFlow gameFlow;
 
         [Header("Automatic head lookup")]
         public bool autoFindHead = true;
@@ -29,9 +30,10 @@ namespace Bully
         public string headTransformName = "head";
 
         [Header("Behaviour")]
-        public Vector3 worldOffset = new Vector3(0f, 0.8f, 0f);
+        public Vector3 worldOffset = new Vector3(0f, -2.5f, 0f);
         [Min(0f)] public float hideAfterSeconds = 4f;
         public bool keepOnScreen = true;
+        public bool onlyDuringGameplay = true;
 
         [Header("Automatic Animal Crossing-style UI")]
         public bool autoBuildUI = true;
@@ -56,6 +58,8 @@ namespace Bully
             ResolveHead();
             if (cam == null)
                 cam = Camera.main;
+            if (gameFlow == null)
+                gameFlow = FindFirstObjectByType<GameFlow>(FindObjectsInactive.Include);
 
             EnsureUI();
             if (bubble != null)
@@ -84,6 +88,12 @@ namespace Bully
 
         void Show(string text)
         {
+            if (!CanShowBubble())
+            {
+                HideBubble();
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(text) && (bubble == null || !bubble.gameObject.activeSelf))
                 return;
 
@@ -114,6 +124,12 @@ namespace Bully
 
         void LateUpdate()
         {
+            if (!CanShowBubble())
+            {
+                HideBubble();
+                return;
+            }
+
             if (head == null && autoFindHead && Time.unscaledTime >= nextHeadSearchAt)
             {
                 ResolveHead();
@@ -165,6 +181,17 @@ namespace Bully
             }
 
             AnimatePop();
+        }
+
+        bool CanShowBubble()
+        {
+            return !onlyDuringGameplay || gameFlow == null || gameFlow.IsGameplayActive;
+        }
+
+        void HideBubble()
+        {
+            if (bubble != null && bubble.gameObject.activeSelf)
+                bubble.gameObject.SetActive(false);
         }
 
         void ResolveHead()
@@ -255,6 +282,12 @@ namespace Bully
             {
                 bubbleCanvas = bubble.GetComponentInParent<Canvas>();
                 canvasGroup = bubble.GetComponent<CanvasGroup>();
+                if (autoBuildUI && bubbleCanvas != null &&
+                    bubbleCanvas.name == "Agent Speech Bubble Canvas" &&
+                    bubbleCanvas.transform.parent != transform)
+                {
+                    bubbleCanvas.transform.SetParent(transform, false);
+                }
                 return;
             }
 
@@ -266,6 +299,7 @@ namespace Bully
             var canvasObject = new GameObject("Agent Speech Bubble Canvas",
                 typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
             canvasObject.layer = 5;
+            canvasObject.transform.SetParent(transform, false);
             bubbleCanvas = canvasObject.GetComponent<Canvas>();
             bubbleCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             bubbleCanvas.sortingOrder = 50;

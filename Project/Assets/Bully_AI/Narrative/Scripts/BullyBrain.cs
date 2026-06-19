@@ -24,10 +24,13 @@ namespace Bully
         [Header("Wiring")]
         public LLMAgent agent;
 
-        [Header("Threat level — the agent's sense of control (0–100)")]
-        [Range(0, 100)] public float threatLevel = 30f;
+        [Header("Initial threat")]
+        public Vector2Int initialThreatRange = new Vector2Int(10, 30);
+
+        [Header("Threat score — the agent's sense of control (unbounded)")]
+        [Min(0f)] public float threatLevel = 30f;
         [Tooltip("Added when the player is Idle (the agent isn't stopped).")]
-        public float threatPerSuccess = 10f;
+        public float threatPerSuccess = 1f;
         [Tooltip("Subtracted when the player Pushes (the agent is disrupted).")]
         public float threatPerDisrupt = 5f;
 
@@ -42,15 +45,28 @@ namespace Bully
         [Header("Generation")]
         public int maxWords = 20;
         public string[] fallbackLines = { "Pathetic.", "Was that supposed to matter?", "You'll learn." };
+        [Tooltip("Minimum wall-clock seconds between two successive LLM responses.")]
+        [Min(0f)] public float minSecondsBetweenLines = 5f;
 
         public event Action<string> OnTaunt;            // final line
         public event Action<string> OnTauntStreaming;   // partial line as it generates
+        public event Action<float> OnThreatChanged;
         public string CurrentLine { get; private set; } = "";
+        public string CurrentPrompt { get; private set; } = "";
         public bool   IsBusy      { get; private set; }
 
         // persistent agent state
         int  consecutiveDisrupts;
         bool pleaIssued;
+        string queuedPrompt;
+        float lastSpokeAt = float.NegativeInfinity;
+
+        void Awake()
+        {
+            int minimum = Mathf.Min(initialThreatRange.x, initialThreatRange.y);
+            int maximum = Mathf.Max(initialThreatRange.x, initialThreatRange.y);
+            threatLevel = Random.Range(minimum, maximum + 1);
+        }
 
         async void Start()
         {
@@ -59,19 +75,45 @@ namespace Bully
             catch (Exception e) { Debug.LogWarning($"[BullyBrain] Warmup skipped: {e.Message}"); }
         }
 
+        void Update()
+        {
+            if (!IsBusy && !string.IsNullOrEmpty(queuedPrompt) &&
+                Time.time - lastSpokeAt >= minSecondsBetweenLines)
+            {
+                string nextPrompt = queuedPrompt;
+                queuedPrompt = null;
+                Speak(nextPrompt);
+            }
+        }
+
         /// <summary>Call this with what the player is doing. Drives everything.</summary>
         public void OnPlayerAction(Consequence c)
         {
             UpdateThreat(c);
             Mood mood = DecideMood(c);
-            Speak(BuildPrompt(c, mood));
+            CurrentPrompt = BuildPrompt(c, mood);
+            Speak(CurrentPrompt);
         }
 
         void UpdateThreat(Consequence c)
         {
-            if (c == Consequence.Push) { threatLevel -= threatPerDisrupt; consecutiveDisrupts++; }
-            else                       { threatLevel += threatPerSuccess; consecutiveDisrupts = 0; } // Idle
-            threatLevel = Mathf.Clamp(threatLevel, 0f, 100f);
+            if (c == Consequence.Push)
+            {
+                AddThreat(-threatPerDisrupt);
+                consecutiveDisrupts++;
+            }
+            else
+            {
+                AddThreat(threatPerSuccess);
+                consecutiveDisrupts = 0;
+            }
+        }
+
+        /// <summary>Adds to the unbounded threat score, retaining only a zero floor.</summary>
+        public void AddThreat(float amount)
+        {
+            threatLevel = Mathf.Max(0f, threatLevel + amount);
+            OnThreatChanged?.Invoke(threatLevel);
         }
 
         Mood DecideMood(Consequence c)
@@ -122,15 +164,24 @@ namespace Bully
 
         string BuildPrompt(Consequence c, Mood mood) =>
             $"{ConsequenceText(c)}\n" +
-            $"Your control over the situation: {Mathf.RoundToInt(threatLevel)}% — {Confidence()}.\n" +
+            $"Your control score: {Mathf.RoundToInt(threatLevel)} — {Confidence()}.\n" +
             $"{MoodDirective(mood)}\n" +
             $"React with a single line of at most {maxWords} words. Stay in character; output only the line.";
 
         // ---- LLM call (streaming + fallback) ----
         async void Speak(string prompt)
         {
-            if (agent == null || IsBusy) return;
+            if (agent == null)
+                return;
+
+            if (IsBusy || Time.time - lastSpokeAt < minSecondsBetweenLines)
+            {
+                queuedPrompt = prompt;
+                return;
+            }
+
             IsBusy = true;
+            lastSpokeAt = Time.time;
             CurrentLine = "";
             try
             {
@@ -142,7 +193,11 @@ namespace Bully
                 OnTaunt?.Invoke(line);
             }
             catch (Exception e) { Debug.LogWarning($"[BullyBrain] Chat failed: {e.Message}"); }
-            finally { IsBusy = false; }
+            finally
+            {
+                IsBusy = false;
+                // Update() drains queuedPrompt once the cooldown also clears.
+            }
         }
 
         void HandleStreaming(string replySoFar)

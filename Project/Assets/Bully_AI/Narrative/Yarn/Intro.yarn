@@ -1,9 +1,8 @@
 // ============================================================
 //  Intro — DAY 0 to DAY 5  (Yarn Spinner)
 //
-//  Linear "read & continue": each DAY is one node that shows a
-//  line of text, then a SINGLE option that jumps to the next day.
-//  The option text becomes the button label (NEXT / FIX IT / STOP AGENT).
+//  Linear "read & continue": each DAY shows a line of text and an
+//  option that advances. DAY 0 also has SKIP INTRO for debugging.
 //
 //  In Unity, set the Dialogue Runner's "Start Node" to:  Day0
 // ============================================================
@@ -14,6 +13,8 @@ title: Day0
 DAY 0: You are the last engineer helping an AI agent to build a base that maintains an autonomous resource distribution network.
 -> NEXT
     <<jump Day1>>
+-> SKIP INTRO
+    <<startGameplay>>
 ===
 
 

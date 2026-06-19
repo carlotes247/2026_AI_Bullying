@@ -1,106 +1,101 @@
+using System;
+using Bully;
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
 
 /// <summary>
-/// Follows the mouse pointer in the physics loop
+/// Spawns a random volley of cube/sphere physics projectiles on a valid click.
+/// Each projectile fires toward the walker ragdoll and then travels as pure physics.
 /// </summary>
-[RequireComponent(typeof(Rigidbody))]
 public class PointerPhysics : MonoBehaviour
 {
-    [Header("Movement Settings")]
-    [Tooltip("How fast the rigidbody moves towards the cursor.")]
-    public float speed = 10f;          // units per second
- 
-    [Tooltip("If true, uses MovePosition (interpolated) instead of velocity.")]
-    public bool useMovePosition = false;
+    public static event Action PlayerFired;
 
-    [Header("Debug / Visual")]
-    [Tooltip("Draw a gizmo showing the target position on the plane.")]
-    public bool drawGizmo = true;
-    public Color gizmoColor = Color.cyan;
-    [SerializeField]
-    private Vector3 targetPos;
-    [Header("zOffset Settings")]
-    [SerializeField]
-    private Vector2 zOffsetBounds = Vector2.one * 10f;
-    [SerializeField]
-    private float zOffset = 10f;
-    [SerializeField]
-    private float zOffsetMult = 1f;
+    [Header("Projectile prefabs")]
+    public GameObject spherePrefab;
+    public GameObject cubePrefab;
 
-    // Cached references
-    private Rigidbody rb;
-    private Camera mainCam;
+    [Header("Volley")]
+    public Vector2Int projectilesPerClick = new Vector2Int(1, 3);
+    [Min(0f)] public float clickCooldownSeconds = 3f;
+    [Min(0.1f)] public float spawnDistanceFromCamera = 3f;
+    [Min(0f)] public float spawnSpread = 1.25f;
+
+    public float CooldownRemaining => Mathf.Max(0f, nextAllowedClickAt - Time.time);
+
+    Camera mainCam;
+    GameFlow gameFlow;
+    Transform ragdollTarget;
+    float nextAllowedClickAt;
 
     void Awake()
     {
-        //rb   = GetComponent<Rigidbody>();
         mainCam = Camera.main;
+        gameFlow = FindFirstObjectByType<GameFlow>(FindObjectsInactive.Include);
+        ResolveTarget();
+    }
+
+    void Update()
+    {
+        if (!Input.GetMouseButtonDown(0))
+            return;
+        if (gameFlow != null && (!gameFlow.IsGameplayActive || gameFlow.IsGameOver))
+            return;
+        if (Time.time < nextAllowedClickAt)
+            return;
+
+        SpawnVolley();
+        nextAllowedClickAt = Time.time + clickCooldownSeconds;
+        PlayerFired?.Invoke();
+    }
+
+    void SpawnVolley()
+    {
         if (mainCam == null)
-            Debug.LogError("MouseFollower: No MainCamera found in the scene!");
+            mainCam = Camera.main;
+        if (mainCam == null)
+            return;
 
-    }
+        ResolveTarget();
 
-    /// <summary>
-    /// Called once per physics step.
-    /// </summary>
-    void FixedUpdate()
-    {
-        Vector3 mousePos = Input.mousePosition;
-        float mouseDelta = Input.mouseScrollDelta.y;
-        // Ensure the z axis will never be out of bounds
-        zOffset += mouseDelta * zOffsetMult;
-        if (zOffset < zOffsetBounds.x)
-            zOffset = zOffsetBounds.x;
-        else if (zOffset > zOffsetBounds.y)
-            zOffset = zOffsetBounds.y;
-        mousePos.z = zOffset;
+        int minimum = Mathf.Min(projectilesPerClick.x, projectilesPerClick.y);
+        int maximum = Mathf.Max(projectilesPerClick.x, projectilesPerClick.y);
+        int count = UnityEngine.Random.Range(Mathf.Max(1, minimum), Mathf.Max(1, maximum) + 1);
 
-        targetPos = mainCam.ScreenToWorldPoint(mousePos);
+        Ray mouseRay = mainCam.ScreenPointToRay(Input.mousePosition);
+        Vector3 volleyCentre = mouseRay.origin + mouseRay.direction * spawnDistanceFromCamera;
 
-        if (rb == null) return;
-        // 4. Move the rigidbody towards that position
-        if (useMovePosition)
+        for (int i = 0; i < count; i++)
         {
-            // Interpolated movement – great for “exact following”
-            rb.MovePosition(Vector3.Lerp(rb.position, targetPos, speed * Time.fixedDeltaTime));
-        }
-        else
-        {
-            // Velocity‑based approach – lets physics simulate the motion
-            Vector3 desiredVelocity = (targetPos - rb.position).normalized * speed;
-            rb.linearVelocity = desiredVelocity;
+            GameObject prefab = UnityEngine.Random.value < 0.5f ? spherePrefab : cubePrefab;
+            if (prefab == null)
+                prefab = spherePrefab != null ? spherePrefab : cubePrefab;
+            if (prefab == null)
+                continue;
+
+            Vector2 spread = UnityEngine.Random.insideUnitCircle * spawnSpread;
+            Vector3 spawnPosition = volleyCentre +
+                mainCam.transform.right * spread.x +
+                mainCam.transform.up * spread.y;
+            Quaternion rotation = UnityEngine.Random.rotation;
+            GameObject projectileObject = Instantiate(prefab, spawnPosition, rotation);
+            AgentSeekingProjectile projectile =
+                projectileObject.GetComponent<AgentSeekingProjectile>();
+            if (projectile != null)
+                projectile.SetTarget(ragdollTarget);
         }
     }
 
-#if UNITY_EDITOR
-    // Draw a little gizmo so you can see where the cursor is projected
-    void OnDrawGizmos()
+    void ResolveTarget()
     {
-        if (!drawGizmo || !mainCam) return;
+        if (ragdollTarget != null)
+            return;
 
-        Gizmos.color = gizmoColor;
-        Gizmos.DrawSphere(targetPos, 0.1f);
-       
-    }
-#endif
-
-    public void Grab(Interactable obj)
-    {
-        if (obj == null) return;
-        if (!obj.InMouse) return;
-        obj.Grabbed = true;
-        rb = obj.GetComponent<Rigidbody>();
-        Debug.Log($"Grabbing {obj.name}");
+        WalkerAgent walker = FindFirstObjectByType<WalkerAgent>(FindObjectsInactive.Include);
+        if (walker != null)
+            ragdollTarget = walker.chest != null ? walker.chest : walker.hips;
     }
 
-    public void Release(Interactable obj)
-    {
-        if (obj == null) return;
-        obj.Grabbed = false;
-        if (rb == obj.GetComponent<Rigidbody>())
-            rb = null;
-        Debug.Log($"Releasing {obj.name}");
-    }
+    // Kept for the existing Interactable prefab; pickup is intentionally disabled.
+    public void Grab(Interactable interactable) { }
+    public void Release(Interactable interactable) { }
 }
-
