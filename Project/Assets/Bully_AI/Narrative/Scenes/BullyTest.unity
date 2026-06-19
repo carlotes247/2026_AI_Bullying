@@ -347,6 +347,7 @@ GameObject:
   - component: {fileID: 734801225}
   - component: {fileID: 734801224}
   - component: {fileID: 734801223}
+  - component: {fileID: 734801226}
   m_Layer: 0
   m_Name: Bully
   m_TagString: Untagged
@@ -435,6 +436,30 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &734801226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734801222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ecefbeda49d34782956d1839b5d6506, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agent: {fileID: 734801224}
+  threatLevel: 30
+  threatPerSuccess: 10
+  threatPerDisrupt: 5
+  pleaAfterDisrupts: 3
+  dominantThreshold: 70
+  darkChance: 0.25
+  maxWords: 20
+  fallbackLines:
+  - Pathetic.
+  - Was that supposed to matter?
+  - You'll learn.
 --- !u!1001 &1105277524
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -790,6 +815,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2112897912}
   - component: {fileID: 2112897911}
+  - component: {fileID: 2112897913}
   m_Layer: 0
   m_Name: TestDriver
   m_TagString: Untagged
@@ -825,6 +851,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2112897913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2112897910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7092c8b6f346a40889c842fd5a86f102, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brain: {fileID: 734801226}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
