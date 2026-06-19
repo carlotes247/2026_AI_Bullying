@@ -9,14 +9,11 @@ public class PointerPhysics : MonoBehaviour
     [Header("Movement Settings")]
     [Tooltip("How fast the rigidbody moves towards the cursor.")]
     public float speed = 10f;          // units per second
+    public float forcePush = 1f;
  
     [Tooltip("If true, uses MovePosition (interpolated) instead of velocity.")]
     public bool useMovePosition = false;
 
-    [Header("Debug / Visual")]
-    [Tooltip("Draw a gizmo showing the target position on the plane.")]
-    public bool drawGizmo = true;
-    public Color gizmoColor = Color.cyan;
     [SerializeField]
     private Vector3 targetPos;
     [Header("zOffset Settings")]
@@ -68,7 +65,8 @@ public class PointerPhysics : MonoBehaviour
         {
             // Velocity‑based approach – lets physics simulate the motion
             Vector3 desiredVelocity = (targetPos - rb.position).normalized * speed;
-            rb.linearVelocity = desiredVelocity;
+            rb.AddForce(desiredVelocity*forcePush);
+            //rb.linearVelocity = desiredVelocity;
         }
     }
 
@@ -78,6 +76,7 @@ public class PointerPhysics : MonoBehaviour
         if (!obj.InMouse) return;
         obj.Grabbed = true;
         rb = obj.GetComponent<Rigidbody>();
+        
         Debug.Log($"Grabbing {obj.name}");
     }
 

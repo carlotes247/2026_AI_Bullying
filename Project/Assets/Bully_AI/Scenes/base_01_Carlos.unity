@@ -707,7 +707,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 10
   forcePush: 1
-  useMovePosition: 1
+  useMovePosition: 0
   targetPos: {x: 0, y: 0, z: 0}
   zOffsetBounds: {x: 4.5, y: 15}
   zOffset: 4.5
@@ -846,6 +846,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 399769471}
   smoothingTime: 0.1
+  m_UseFixedOffset: 0
+  m_FixedOffset: {x: 0, y: 0, z: 0}
 --- !u!124 &1369650811
 Behaviour:
   m_ObjectHideFlags: 0
