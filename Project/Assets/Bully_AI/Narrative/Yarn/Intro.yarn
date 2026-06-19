@@ -55,5 +55,5 @@ DAY 5: Remove human bottleneck.
 -> STOP AGENT
     // End of the intro. To start gameplay, register a command in
     // Unity ([YarnCommand("startGameplay")]) and uncomment:
-    // <<startGameplay>>
+    <<startGameplay>>
 ===
