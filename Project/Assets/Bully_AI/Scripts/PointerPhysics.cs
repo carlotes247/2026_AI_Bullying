@@ -1,5 +1,4 @@
 using UnityEngine;
-using static UnityEditor.PlayerSettings;
 
 /// <summary>
 /// Follows the mouse pointer in the physics loop
@@ -72,18 +71,6 @@ public class PointerPhysics : MonoBehaviour
             rb.linearVelocity = desiredVelocity;
         }
     }
-
-#if UNITY_EDITOR
-    // Draw a little gizmo so you can see where the cursor is projected
-    void OnDrawGizmos()
-    {
-        if (!drawGizmo || !mainCam) return;
-
-        Gizmos.color = gizmoColor;
-        Gizmos.DrawSphere(targetPos, 0.1f);
-       
-    }
-#endif
 
     public void Grab(Interactable obj)
     {
